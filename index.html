@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TTS 语音合成</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { text-align: center; color: #1e90ff; }
+        .input-group {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 16px;
+            background: #1e90ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0066cc; }
+        select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        #player {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .note {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 在线语音合成</h1>
+
+    <div class="input-group">
+        <input type="text" id="text" value="你好，欢迎使用语音合成服务" placeholder="请输入要朗读的文本" />
+        <button onclick="speak()">🔊 生成语音</button>
+    </div>
+
+    <div class="controls">
+        <div>
+            <label class="form-label">语音角色</label>
+            <select id="voice">
+                <option value="zh-CN-XiaoxiaoNeural">晓晓 - 女声</option>
+                <option value="zh-CN-XiaoyiNeural">小一 - 女声</option>
+                <option value="zh-CN-YunyangNeural">云扬 - 男声</option>
+                <option value="zh-CN-XiaochenNeural">晓辰 - 女声</option>
+                <option value="zh-CN-YunyeNeural">云野 - 女声</option>
+                <option value="zh-CN-XiaohanNeural">晓涵 - 女声</option>
+                <option value="zh-CN-YunjianNeural">云健 - 男声</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">情感风格</label>
+            <select id="style">
+                <option value="general">普通</option>
+                <option value="cheerful">开心</option>
+                <option value="sad">悲伤</option>
+                <option value="angry">生气</option>
+                <option value="excited">兴奋</option>
+                <option value="fearful">害怕</option>
+                <option value="disgruntled">不满</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">语速</label>
+            <select id="rate">
+                <option value="-50%">慢</option>
+                <option value="-25%">较慢</option>
+                <option value="+0%" selected>正常</option>
+                <option value="+25%">较快</option>
+                <option value="+50%">快</option>
+            </select>
+        </div>
+    </div>
+
+    <audio id="player" controls preload="none"></audio>
+
+    <p class="note">提示：首次使用可能需要几秒加载，请耐心等待。</p>
+
+    <script>
+        // ✅ 使用您提供的云函数 + 静态托管地址
+        const TTS_API_URL = 'https://tts-7grv72ds7ddf0eb2-1303209242.ap-guangzhou.app.tcloudbase.com/tts';
+
+        async function speak() {
+            const textInput = document.getElementById('text');
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('请输入要朗读的文本！');
+                textInput.focus();
+                return;
+            }
+
+            const voice = document.getElementById('voice').value;
+            const style = document.getElementById('style').value;
+            const rate = document.getElementById('rate').value;
+
+            try {
+                // 构造请求 URL
+                const url = new URL(TTS_API_URL);
+                url.searchParams.append('text', text);
+                url.searchParams.append('voice', voice);
+                url.searchParams.append('style', style);
+                url.searchParams.append('rate', rate);
+
+                console.log('请求地址:', url.toString());
+
+                const response = await fetch(url.toString());
+                if (!response.ok) {
+                    throw new Error(`请求失败: ${response.status} ${response.statusText}`);
+                }
+
+                // 假设后端返回 JSON: { "body": "base64..." }
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // 创建音频 URL
+                const audioSrc = 'data:audio/mpeg;base64,' + data.body;
+                const player = document.getElementById('player');
+                player.src = audioSrc;
+                player.play();
+
+            } catch (error) {
+                console.error('TTS Error:', error);
+                alert('生成语音失败: ' + error.message);
+            }
+        }
+
+        // 回车键触发
+        document.getElementById('text').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') speak();
+        });
+    </script>
+</body>
+</html>
